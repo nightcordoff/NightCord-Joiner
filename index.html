@@ -1,0 +1,1256 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Vocal Joiner PRO - UNDETECT</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            background: #1a1a1a;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 13px;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .left-panel {
+            width: 450px;
+            background: #252525;
+            border-right: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tabs {
+            display: flex;
+            background: #1a1a1a;
+            border-bottom: 1px solid #333;
+        }
+
+        .tab {
+            padding: 12px 20px;
+            background: #2a2a2a;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            font-size: 12px;
+            border-right: 1px solid #333;
+            flex: 1;
+        }
+
+        .tab.active {
+            background: #00a8e8;
+        }
+
+        .tab:hover:not(.active) {
+            background: #333;
+        }
+
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: none;
+        }
+
+        .panel-content.active {
+            display: block;
+        }
+
+        .section {
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            color: #888;
+            font-size: 11px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            letter-spacing: 0.5px;
+        }
+
+        .file-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .file-label {
+            flex: 1;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            padding: 10px;
+            border-radius: 3px;
+            font-size: 12px;
+            color: #888;
+        }
+
+        .file-label.loaded {
+            color: #00a8e8;
+        }
+
+        .btn-select {
+            background: #333;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .btn-select:hover {
+            background: #404040;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select,
+        textarea {
+            width: 100%;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            color: #e0e0e0;
+            padding: 10px;
+            border-radius: 3px;
+            font-size: 12px;
+            margin-bottom: 10px;
+            font-family: inherit;
+        }
+
+        textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: #00a8e8;
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: #00a8e8;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 3px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 10px;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #00a8e8;
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: #0096d1;
+        }
+
+        .btn-primary:disabled {
+            background: #333;
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        .btn-success {
+            background: #00c853;
+            color: #fff;
+        }
+
+        .btn-success:hover {
+            background: #00b248;
+        }
+
+        .btn-danger {
+            background: #d32f2f;
+            color: #fff;
+        }
+
+        .btn-danger:hover {
+            background: #c62828;
+        }
+
+        .btn-secondary {
+            background: #333;
+            color: #fff;
+        }
+
+        .btn-secondary:hover {
+            background: #404040;
+        }
+
+        .btn-warning {
+            background: #ff9800;
+            color: #fff;
+        }
+
+        .btn-warning:hover {
+            background: #f57c00;
+        }
+
+        .btn-purple {
+            background: #9c27b0;
+            color: #fff;
+        }
+
+        .btn-purple:hover {
+            background: #7b1fa2;
+        }
+
+        .btn.active {
+            background: #d32f2f;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .right-panel {
+            flex: 1;
+            background: #1a1a1a;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tokens-header {
+            background: #252525;
+            padding: 15px 20px;
+            border-bottom: 1px solid #333;
+            font-size: 12px;
+            color: #888;
+        }
+
+        .tokens-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 11px;
+        }
+
+        .token-item {
+            padding: 5px 10px;
+            margin-bottom: 2px;
+            background: #252525;
+            border-left: 3px solid #00a8e8;
+            color: #ccc;
+        }
+
+        .logs-section {
+            height: 300px;
+            background: #0a0a0a;
+            border-top: 1px solid #333;
+            overflow-y: auto;
+            padding: 10px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 11px;
+        }
+
+        .log-entry {
+            padding: 4px 0;
+            color: #888;
+        }
+
+        .log-entry .timestamp {
+            color: #555;
+        }
+
+        .log-entry.success { color: #00c853; }
+        .log-entry.error { color: #d32f2f; }
+        .log-entry.info { color: #00a8e8; }
+        .log-entry.warning { color: #ff9800; }
+
+        .status-bar {
+            background: #0a0a0a;
+            padding: 8px 20px;
+            border-top: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #666;
+        }
+
+        .status-bar .item {
+            display: flex;
+            gap: 15px;
+        }
+
+        .status-bar .highlight {
+            color: #00c853;
+        }
+
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #404040;
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #505050;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-label {
+            font-size: 11px;
+            color: #888;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-group .btn {
+            flex: 1;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 5px;
+            background: #333;
+            outline: none;
+            border-radius: 3px;
+            margin: 10px 0;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 15px;
+            height: 15px;
+            background: #00a8e8;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 15px;
+            height: 15px;
+            background: #00a8e8;
+            cursor: pointer;
+            border-radius: 50%;
+            border: none;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .badge-proxy {
+            background: #9c27b0;
+            color: #fff;
+        }
+
+        .badge-new {
+            background: #00c853;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="left-panel">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab(0)">SETUP</button>
+                <button class="tab" onclick="switchTab(1)">VOCAL</button>
+                <button class="tab" onclick="switchTab(2)">ACTIONS <span class="badge badge-new">NEW</span></button>
+                <button class="tab" onclick="switchTab(3)">REACT</button>
+            </div>
+
+            <!-- TAB 0: SETUP -->
+            <div class="panel-content active">
+                <div class="section">
+                    <div class="section-title">📁 tokens discord</div>
+                    
+                    <div class="file-selector">
+                        <div class="file-label" id="fileLabel">Aucun fichier sélectionné</div>
+                        <button class="btn-select" onclick="document.getElementById('tokenFile').click()">select tokens</button>
+                        <input type="file" id="tokenFile" accept=".txt" style="display: none;" onchange="handleTokenFileSelect(event)">
+                    </div>
+
+                    <div class="input-group">
+                        <label class="input-label">nb tokens (0=max):</label>
+                        <input type="number" id="accountLimit" value="0" min="0">
+                    </div>
+
+                    <button class="btn btn-primary" id="connectBtn" onclick="connectTokens()" disabled>CONNECTER LES TOKENS</button>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">🔒 proxies résidentiels (optionnel)</div>
+                    
+                    <div class="file-selector">
+                        <div class="file-label" id="proxyFileLabel">Aucun fichier sélectionné</div>
+                        <button class="btn-select" onclick="document.getElementById('proxyFile').click()">select proxies</button>
+                        <input type="file" id="proxyFile" accept=".txt" style="display: none;" onchange="handleProxyFileSelect(event)">
+                    </div>
+
+                    <label class="input-label">Ou entrer manuellement (un par ligne):</label>
+                    <textarea id="proxyTextarea" placeholder="Format: host:port:username:password
+Exemple:
+p.webshare.io:80:user-1:pass123
+p.webshare.io:80:user-2:pass123" style="min-height: 120px;"></textarea>
+                    
+                    <button class="btn btn-secondary" onclick="loadProxiesManual()">CHARGER PROXIES</button>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">🔑 2captcha key (optionnel)</div>
+                    
+                    <div class="file-selector">
+                        <div class="file-label" id="captchaFileLabel">Aucun fichier sélectionné</div>
+                        <button class="btn-select" onclick="document.getElementById('captchaFile').click()">select key file</button>
+                        <input type="file" id="captchaFile" accept=".txt" style="display: none;" onchange="handleCaptchaFileSelect(event)">
+                    </div>
+
+                    <label class="input-label">Ou entrer manuellement:</label>
+                    <input type="text" id="captchaKey" placeholder="Votre clé 2Captcha">
+                    
+                    <button class="btn btn-secondary" onclick="loadCaptchaManual()">CHARGER CLÉ CAPTCHA</button>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">📊 statut configuration</div>
+                    <div style="background: #0a0a0a; padding: 15px; border-radius: 3px; font-size: 12px;">
+                        <div style="margin-bottom: 8px;">
+                            <span style="color: #888;">Tokens:</span> 
+                            <span id="setupTokenCount" style="color: #00a8e8;">0 chargés</span>
+                        </div>
+                        <div style="margin-bottom: 8px;">
+                            <span style="color: #888;">Proxies:</span> 
+                            <span id="setupProxyCount" style="color: #00a8e8;">0 chargés</span>
+                        </div>
+                        <div>
+                            <span style="color: #888;">2Captcha:</span> 
+                            <span id="setupCaptchaStatus" style="color: #888;">Non configuré</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 1: VOCAL -->
+            <div class="panel-content active">
+                <div class="section">
+                    <div class="section-title">configuration</div>
+                    
+                    <div class="file-selector">
+                        <div class="file-label" id="fileLabel">Aucun fichier sélectionné</div>
+                        <button class="btn-select" onclick="document.getElementById('tokenFile').click()">select tokens</button>
+                        <input type="file" id="tokenFile" accept=".txt" style="display: none;" onchange="handleTokenFileSelect(event)">
+                    </div>
+
+                    <div class="input-group">
+                        <label class="input-label">id du serveur:</label>
+                        <input type="text" id="guildId" placeholder="1365258339285533437">
+                    </div>
+
+                    <div class="input-group">
+                        <label class="input-label">id du channel:</label>
+                        <input type="text" id="channelId" placeholder="1411703490685698128">
+                    </div>
+
+                    <div class="input-group">
+                        <label class="input-label">nb tokens (0=max):</label>
+                        <input type="number" id="accountLimit" value="0" min="0">
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">controls</div>
+                    
+                    <button class="btn btn-primary" id="connectBtn" onclick="connectTokens()" disabled>test tes tokens</button>
+                    <button class="btn btn-success" onclick="joinVocal()">rej voc</button>
+                    <button class="btn btn-danger" onclick="leaveVocal()">leave voc</button>
+                </div>
+
+                <div class="section">
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="autoJoin">
+                        <label>auto-join channel</label>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">options</div>
+                    
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="mute">
+                            <label>Mute</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="deaf" checked>
+                            <label>Deafen</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="video">
+                            <label>Vidéo</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="stream">
+                            <label>Stream</label>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label class="input-label">Délai entre chaque JOIN (ms):</label>
+                        <input type="number" id="joinDelay" value="50" min="0" max="500">
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">follow user:</div>
+                    <input type="text" id="followUserId" placeholder="ID de l'utilisateur à suivre">
+                    <button class="btn btn-warning" id="followBtn" onclick="toggleFollow()">ACTIVER SUIVI</button>
+                </div>
+
+                <div class="section">
+                    <button class="btn btn-secondary" id="loopBtn" onclick="toggleLoop()">🔄 MODE BOUCLE (OFF)</button>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">🔊 soundboard mp3</div>
+                    <div class="file-selector">
+                        <div class="file-label" id="mp3Label">Aucun MP3 sélectionné</div>
+                        <button class="btn-select" onclick="document.getElementById('mp3File').click()">select mp3</button>
+                        <input type="file" id="mp3File" accept="audio/mp3,audio/mpeg" style="display: none;" onchange="handleMp3FileSelect(event)">
+                    </div>
+                    <label class="input-label">Volume: <span id="volumeDisplay">30%</span></label>
+                    <input type="range" id="mp3Volume" min="0" max="100" value="30" oninput="updateVolumeDisplay()">
+                    <button class="btn btn-primary" id="soundboardBtn" onclick="playSoundboard()" disabled>JOUER LE SON</button>
+                </div>
+
+                <div class="section">
+                    <button class="btn btn-danger" onclick="disconnectAll()">DÉCONNECTER TOUT</button>
+                </div>
+            </div>
+
+            <!-- TAB 2: ACTIONS AVEC PROXIES -->
+            <div class="panel-content">
+                <div class="section">
+                    <div class="section-title">🌐 join server <span class="badge badge-proxy">PROXY</span></div>
+                    <input type="text" id="inviteCode" placeholder="Code d'invitation (ex: discord.gg/xxxxx)">
+                    <div class="input-group">
+                        <label class="input-label">Délai entre chaque join (ms):</label>
+                        <input type="number" id="joinServerDelay" value="2000" min="1000" max="10000">
+                    </div>
+                    <button class="btn btn-purple" onclick="joinServer()">REJOINDRE SERVEUR</button>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">💬 spam dm <span class="badge badge-proxy">PROXY</span></div>
+                    <input type="text" id="dmUserId" placeholder="ID de l'utilisateur">
+                    <textarea id="dmMessage" placeholder="Message à envoyer..."></textarea>
+                    <div class="input-group">
+                        <label class="input-label">Nombre de messages par compte:</label>
+                        <input type="number" id="dmCount" value="1" min="1" max="50">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Délai entre messages (ms):</label>
+                        <input type="number" id="dmDelay" value="1500" min="500" max="10000">
+                    </div>
+                    <button class="btn btn-purple" onclick="spamDM()">ENVOYER MESSAGES</button>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">👤 change profile <span class="badge badge-proxy">PROXY</span></div>
+                    <textarea id="profileBio" placeholder="Nouvelle bio..."></textarea>
+                    <div class="input-group">
+                        <label class="input-label">Délai entre updates (ms):</label>
+                        <input type="number" id="profileDelay" value="2000" min="1000" max="10000">
+                    </div>
+                    <button class="btn btn-purple" onclick="changeProfile()">CHANGER BIO</button>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">📝 change username <span class="badge badge-proxy">PROXY</span></div>
+                    <input type="text" id="newUsername" placeholder="Nouveau pseudo (+ random number)">
+                    <div class="input-group">
+                        <label class="input-label">Délai entre updates (ms):</label>
+                        <input type="number" id="usernameDelay" value="3000" min="2000" max="15000">
+                    </div>
+                    <button class="btn btn-purple" onclick="changeUsername()">CHANGER USERNAME</button>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">📛 change display name <span class="badge badge-proxy">PROXY</span></div>
+                    <input type="text" id="displayName" placeholder="Nouveau nom d'affichage">
+                    <input type="text" id="displayGuildId" placeholder="ID serveur (optionnel pour surnom)">
+                    <div class="input-group">
+                        <label class="input-label">Délai entre updates (ms):</label>
+                        <input type="number" id="displayDelay" value="2000" min="1000" max="10000">
+                    </div>
+                    <button class="btn btn-purple" onclick="changeDisplayName()">CHANGER NOM</button>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">🖼️ change avatar <span class="badge badge-proxy">PROXY</span></div>
+                    <div class="file-selector">
+                        <div class="file-label" id="avatarLabel">Aucune image sélectionnée</div>
+                        <button class="btn-select" onclick="document.getElementById('avatarFile').click()">select image</button>
+                        <input type="file" id="avatarFile" accept="image/*" style="display: none;" onchange="handleAvatarFileSelect(event)">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Délai entre updates (ms):</label>
+                        <input type="number" id="avatarDelay" value="3000" min="2000" max="15000">
+                    </div>
+                    <button class="btn btn-purple" id="avatarBtn" onclick="changeAvatar()" disabled>CHANGER AVATAR</button>
+                </div>
+            </div>
+
+            <!-- TAB 3: REACTIONS -->
+            <div class="panel-content">
+                <div class="section">
+                    <div class="section-title">❤️ react message</div>
+                    <input type="text" id="messageId" placeholder="ID du message">
+                    <div class="btn-group">
+                        <button class="btn btn-secondary" onclick="reactPosition(1)">REACT 1</button>
+                        <button class="btn btn-secondary" onclick="reactPosition(2)">REACT 2</button>
+                        <button class="btn btn-danger" onclick="removeAllReactions()">REMOVE</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="tokens-header">tokens de co</div>
+            <div class="tokens-list" id="tokensList">
+                <div style="color: #555; font-style: italic;">Aucun token chargé</div>
+            </div>
+            <div class="logs-section" id="logs">
+                <div class="log-entry" style="font-style: italic;">En attente de connexion...</div>
+            </div>
+            <div class="status-bar">
+                <div class="item">
+                    <span>co - <span class="highlight" id="connectedCount">0</span> tokens</span>
+                    <span>token: <span id="totalTokens">0</span></span>
+                    <span>co: <span class="highlight" id="successCount">0</span></span>
+                </div>
+                <div class="item">
+                    <span>reussite: <span class="highlight" id="successRate">0%</span></span>
+                    <span>delay: <span id="delayInfo">0ms</span></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        let isLooping = false;
+        let isFollowing = false;
+        let successCount = 0;
+        let selectedMp3File = null;
+        let selectedAvatarFile = null;
+        let loadedTokens = [];
+        let loadedProxies = [];
+        let captchaApiKey = '';
+
+        function switchTab(index) {
+            const tabs = document.querySelectorAll('.tab');
+            const contents = document.querySelectorAll('.panel-content');
+            
+            tabs.forEach((tab, i) => {
+                if (i === index) {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
+            
+            contents.forEach((content, i) => {
+                if (i === index) {
+                    content.classList.add('active');
+                } else {
+                    content.classList.remove('active');
+                }
+            });
+        }
+
+        function updateSetupStatus() {
+            document.getElementById('setupTokenCount').textContent = `${loadedTokens.length} chargés`;
+            document.getElementById('setupProxyCount').textContent = `${loadedProxies.length} chargés`;
+            document.getElementById('setupCaptchaStatus').textContent = captchaApiKey ? 'Configuré ✓' : 'Non configuré';
+            document.getElementById('setupCaptchaStatus').style.color = captchaApiKey ? '#00c853' : '#888';
+        }
+
+        function addLog(message, type = 'info') {
+            const logsDiv = document.getElementById('logs');
+            const time = new Date().toLocaleTimeString('fr-FR');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${type}`;
+            logEntry.innerHTML = `<span class="timestamp">[${time}]</span> ${message}`;
+            logsDiv.appendChild(logEntry);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        }
+
+        function handleTokenFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const content = e.target.result;
+                    loadedTokens = content.split('\n').filter(t => t.trim() !== '');
+                    
+                    document.getElementById('fileLabel').textContent = `${file.name} (${loadedTokens.length} tokens)`;
+                    document.getElementById('fileLabel').classList.add('loaded');
+                    document.getElementById('connectBtn').disabled = false;
+                    document.getElementById('totalTokens').textContent = loadedTokens.length;
+                    
+                    const tokensList = document.getElementById('tokensList');
+                    tokensList.innerHTML = '';
+                    loadedTokens.forEach((token, i) => {
+                        const parts = token.split('.');
+                        const username = parts[0] || `token_${i+1}`;
+                        const div = document.createElement('div');
+                        div.className = 'token-item';
+                        div.textContent = username;
+                        tokensList.appendChild(div);
+                    });
+                    
+                    addLog(`Fichier chargé: ${file.name} (${loadedTokens.length} tokens)`, 'success');
+                    updateSetupStatus();
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        function handleProxyFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const content = e.target.result;
+                    loadedProxies = content.split('\n').filter(p => p.trim() !== '');
+                    
+                    document.getElementById('proxyFileLabel').textContent = `${file.name} (${loadedProxies.length} proxies)`;
+                    document.getElementById('proxyFileLabel').classList.add('loaded');
+                    
+                    // Envoyer au serveur
+                    socket.emit('load-proxies', loadedProxies);
+                    
+                    addLog(`Proxies chargés: ${loadedProxies.length}`, 'success');
+                    updateSetupStatus();
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        function handleCaptchaFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    captchaApiKey = e.target.result.trim();
+                    
+                    document.getElementById('captchaFileLabel').textContent = `${file.name} (clé chargée)`;
+                    document.getElementById('captchaFileLabel').classList.add('loaded');
+                    document.getElementById('captchaKey').value = captchaApiKey;
+                    
+                    // Envoyer au serveur
+                    socket.emit('load-captcha', captchaApiKey);
+                    
+                    addLog('Clé 2Captcha chargée', 'success');
+                    updateSetupStatus();
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        function loadProxiesManual() {
+            const textarea = document.getElementById('proxyTextarea').value.trim();
+            if (!textarea) {
+                addLog('Veuillez entrer des proxies', 'warning');
+                return;
+            }
+            
+            loadedProxies = textarea.split('\n').filter(p => p.trim() !== '');
+            
+            document.getElementById('proxyFileLabel').textContent = `Manuel (${loadedProxies.length} proxies)`;
+            document.getElementById('proxyFileLabel').classList.add('loaded');
+            
+            // Envoyer au serveur
+            socket.emit('load-proxies', loadedProxies);
+            
+            addLog(`${loadedProxies.length} proxies chargés manuellement`, 'success');
+            updateSetupStatus();
+        }
+
+        function loadCaptchaManual() {
+            captchaApiKey = document.getElementById('captchaKey').value.trim();
+            if (!captchaApiKey) {
+                addLog('Veuillez entrer une clé 2Captcha', 'warning');
+                return;
+            }
+            
+            document.getElementById('captchaFileLabel').textContent = 'Manuel (clé chargée)';
+            document.getElementById('captchaFileLabel').classList.add('loaded');
+            
+            // Envoyer au serveur
+            socket.emit('load-captcha', captchaApiKey);
+            
+            addLog('Clé 2Captcha chargée manuellement', 'success');
+            updateSetupStatus();
+        }
+
+        function handleMp3FileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                selectedMp3File = file;
+                document.getElementById('mp3Label').textContent = file.name;
+                document.getElementById('mp3Label').classList.add('loaded');
+                document.getElementById('soundboardBtn').disabled = false;
+                addLog(`Fichier MP3 chargé: ${file.name}`, 'success');
+            }
+        }
+
+        function handleAvatarFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                selectedAvatarFile = file;
+                document.getElementById('avatarLabel').textContent = file.name;
+                document.getElementById('avatarLabel').classList.add('loaded');
+                document.getElementById('avatarBtn').disabled = false;
+                addLog(`Image chargée: ${file.name}`, 'success');
+            }
+        }
+
+        function updateVolumeDisplay() {
+            const volume = document.getElementById('mp3Volume').value;
+            document.getElementById('volumeDisplay').textContent = volume + '%';
+        }
+
+        socket.on('connect', () => {
+            addLog('Connecté au serveur Node.js', 'success');
+            updateSetupStatus();
+        });
+
+        socket.on('proxies-loaded', (data) => {
+            addLog(`✅ Serveur: ${data.count} proxies chargés`, 'success');
+        });
+
+        socket.on('captcha-loaded', () => {
+            addLog('✅ Serveur: Clé 2Captcha configurée', 'success');
+        });
+
+        socket.on('token-success', (data) => {
+            successCount++;
+            document.getElementById('successCount').textContent = successCount;
+            document.getElementById('connectedCount').textContent = successCount;
+            const rate = loadedTokens.length > 0 ? ((successCount / loadedTokens.length) * 100).toFixed(1) : 0;
+            document.getElementById('successRate').textContent = rate + '%';
+            addLog(`✅ ${data.username}`, 'success');
+        });
+
+        socket.on('connection-complete', (data) => {
+            addLog(`Total: ${data.success} comptes connectés`, 'info');
+        });
+
+        socket.on('follow-update', (data) => {
+            addLog(`🎯 ${data.message}`, 'warning');
+        });
+
+        socket.on('react-update', (data) => {
+            addLog(`❤️ ${data.message}`, 'info');
+        });
+
+        socket.on('soundboard-update', (data) => {
+            addLog(`🔊 ${data.message}`, 'info');
+        });
+
+        // Nouveaux event listeners pour les actions avec proxies
+        socket.on('joinserver-update', (data) => {
+            addLog(`🌐 ${data.message}`, 'info');
+        });
+
+        socket.on('joinserver-complete', (data) => {
+            addLog(`✅ Join server terminé: ${data.success}/${data.total}`, 'success');
+        });
+
+        socket.on('spamdm-update', (data) => {
+            addLog(`💬 ${data.message}`, 'info');
+        });
+
+        socket.on('spamdm-complete', (data) => {
+            addLog(`✅ Spam DM terminé: ${data.success}/${data.total}`, 'success');
+        });
+
+        socket.on('profile-update', (data) => {
+            addLog(`👤 ${data.message}`, 'info');
+        });
+
+        socket.on('profile-complete', (data) => {
+            addLog(`✅ Profils mis à jour: ${data.success}/${data.total}`, 'success');
+        });
+
+        socket.on('username-update', (data) => {
+            addLog(`📝 ${data.message}`, 'info');
+        });
+
+        socket.on('username-complete', (data) => {
+            addLog(`✅ Usernames modifiés: ${data.success}/${data.total}`, 'success');
+        });
+
+        socket.on('displayname-update', (data) => {
+            addLog(`📛 ${data.message}`, 'info');
+        });
+
+        socket.on('displayname-complete', (data) => {
+            addLog(`✅ Noms d'affichage modifiés: ${data.success}/${data.total}`, 'success');
+        });
+
+        socket.on('avatar-update', (data) => {
+            addLog(`🖼️ ${data.message}`, 'info');
+        });
+
+        socket.on('avatar-complete', (data) => {
+            addLog(`✅ Avatars modifiés: ${data.success}/${data.total}`, 'success');
+        });
+
+        function connectTokens() {
+            if (loadedTokens.length === 0) {
+                addLog('Aucun token chargé', 'warning');
+                return;
+            }
+            successCount = 0;
+            document.getElementById('successCount').textContent = '0';
+            document.getElementById('connectedCount').textContent = '0';
+            addLog(`Connexion de ${loadedTokens.length} tokens...`, 'info');
+            socket.emit('connect-tokens', loadedTokens);
+        }
+
+        function joinVocal() {
+            const delay = parseInt(document.getElementById('joinDelay').value) || 50;
+            const limit = parseInt(document.getElementById('accountLimit').value) || 0;
+            document.getElementById('delayInfo').textContent = delay + 'ms';
+            socket.emit('join-vocal', {
+                guildId: document.getElementById('guildId').value,
+                channelId: document.getElementById('channelId').value,
+                delay: delay,
+                limit: limit,
+                options: {
+                    mute: document.getElementById('mute').checked,
+                    deaf: document.getElementById('deaf').checked,
+                    video: document.getElementById('video').checked,
+                    stream: document.getElementById('stream').checked
+                }
+            });
+            addLog(`Rejoindre le vocal (délai: ${delay}ms)`, 'info');
+        }
+
+        function leaveVocal() {
+            socket.emit('leave-vocal');
+            addLog('Quitter le vocal...', 'warning');
+        }
+
+        function disconnectAll() {
+            socket.emit('disconnect-all');
+            successCount = 0;
+            document.getElementById('successCount').textContent = '0';
+            document.getElementById('connectedCount').textContent = '0';
+            addLog('Déconnexion de tous les clients...', 'error');
+        }
+
+        function toggleFollow() {
+            isFollowing = !isFollowing;
+            const followBtn = document.getElementById('followBtn');
+            const userId = document.getElementById('followUserId').value.trim();
+            const guildId = document.getElementById('guildId').value.trim();
+            const delay = parseInt(document.getElementById('joinDelay').value) || 50;
+            const limit = parseInt(document.getElementById('accountLimit').value) || 0;
+            
+            if (isFollowing) {
+                if (!userId || !guildId) {
+                    addLog('Veuillez entrer un ID utilisateur et serveur', 'warning');
+                    isFollowing = false;
+                    return;
+                }
+                
+                followBtn.textContent = 'ARRÊTER SUIVI';
+                followBtn.classList.add('active');
+                addLog(`Suivi activé pour l'utilisateur ${userId}`, 'warning');
+                
+                socket.emit('start-follow', {
+                    userId: userId,
+                    guildId: guildId,
+                    delay: delay,
+                    limit: limit,
+                    options: {
+                        mute: document.getElementById('mute').checked,
+                        deaf: document.getElementById('deaf').checked,
+                        video: document.getElementById('video').checked,
+                        stream: document.getElementById('stream').checked
+                    }
+                });
+            } else {
+                followBtn.textContent = 'ACTIVER SUIVI';
+                followBtn.classList.remove('active');
+                addLog('Suivi désactivé', 'info');
+                socket.emit('stop-follow');
+            }
+        }
+
+        function toggleLoop() {
+            isLooping = !isLooping;
+            const loopBtn = document.getElementById('loopBtn');
+            const delay = parseInt(document.getElementById('joinDelay').value) || 50;
+            const limit = parseInt(document.getElementById('accountLimit').value) || 0;
+            
+            if (isLooping) {
+                loopBtn.textContent = '🔄 MODE BOUCLE (ON)';
+                loopBtn.classList.add('active');
+                addLog('Mode boucle activé', 'warning');
+                
+                socket.emit('start-loop', {
+                    guildId: document.getElementById('guildId').value,
+                    channelId: document.getElementById('channelId').value,
+                    delay: delay,
+                    limit: limit,
+                    options: {
+                        mute: document.getElementById('mute').checked,
+                        deaf: document.getElementById('deaf').checked,
+                        video: document.getElementById('video').checked,
+                        stream: document.getElementById('stream').checked
+                    }
+                });
+            } else {
+                loopBtn.textContent = '🔄 MODE BOUCLE (OFF)';
+                loopBtn.classList.remove('active');
+                addLog('Mode boucle désactivé', 'info');
+                socket.emit('stop-loop');
+            }
+        }
+
+        function reactPosition(position) {
+            const messageId = document.getElementById('messageId').value.trim();
+            const limit = parseInt(document.getElementById('accountLimit').value) || 0;
+            
+            if (!messageId) {
+                addLog('Veuillez entrer un ID de message', 'warning');
+                return;
+            }
+            
+            addLog(`React à la réaction ${position}...`, 'info');
+            socket.emit('react-position', {
+                messageId: messageId,
+                position: position,
+                limit: limit
+            });
+        }
+
+        function removeAllReactions() {
+            const messageId = document.getElementById('messageId').value.trim();
+            const limit = parseInt(document.getElementById('accountLimit').value) || 0;
+            
+            if (!messageId) {
+                addLog('Veuillez entrer un ID de message', 'warning');
+                return;
+            }
+            
+            addLog('Suppression de toutes les réactions...', 'error');
+            socket.emit('remove-all-reactions', {
+                messageId: messageId,
+                limit: limit
+            });
+        }
+
+        function playSoundboard() {
+            if (!selectedMp3File) {
+                addLog('Veuillez sélectionner un fichier MP3', 'warning');
+                return;
+            }
+
+            const volume = parseInt(document.getElementById('mp3Volume').value) / 100;
+            addLog(`Lecture du son (volume: ${Math.round(volume * 100)}%)...`, 'info');
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64Audio = e.target.result.split(',')[1];
+                socket.emit('play-soundboard', {
+                    audioData: base64Audio,
+                    volume: volume,
+                    fileName: selectedMp3File.name
+                });
+            };
+            reader.readAsDataURL(selectedMp3File);
+        }
+
+        // ==================== NOUVELLES FONCTIONS AVEC PROXIES ====================
+
+        function joinServer() {
+            const inviteCode = document.getElementById('inviteCode').value.trim();
+            const limit = parseInt(document.getElementById('accountLimit').value) || 0;
+            const delay = parseInt(document.getElementById('joinServerDelay').value) || 2000;
+            
+            if (!inviteCode) {
+                addLog('Veuillez entrer un code d\'invitation', 'warning');
+                return;
+            }
+            
+            addLog(`🌐 Join server: ${inviteCode} avec proxies...`, 'info');
+            socket.emit('join-server', {
+                inviteCode: inviteCode,
+                limit: limit,
+                delayBetween: delay
+            });
+        }
+
+        function spamDM() {
+            const userId = document.getElementById('dmUserId').value.trim();
+            const message = document.getElementById('dmMessage').value.trim();
+            const count = parseInt(document.getElementById('dmCount').value) || 1;
+            const limit = parseInt(document.getElementById('accountLimit').value) || 0;
+            const delay = parseInt(document.getElementById('dmDelay').value) || 1500;
+            
+            if (!userId || !message) {
+                addLog('Veuillez entrer un ID utilisateur et un message', 'warning');
+                return;
+            }
+            
+            addLog(`💬 Spam DM à ${userId} avec proxies...`, 'info');
+            socket.emit('spam-dm', {
+                userId: userId,
+                message: message,
+                count: count,
+                limit: limit,
+                delayBetween: delay
+            });
+        }
+
+        function changeProfile() {
+            const bio = document.getElementById('profileBio').value.trim();
+            const limit = parseInt(document.getElementById('accountLimit').value) || 0;
+            const delay = parseInt(document.getElementById('profileDelay').value) || 2000;
+            
+            if (!bio) {
+                addLog('Veuillez entrer une bio', 'warning');
+                return;
+            }
+            
+            addLog(`👤 Changement de bio avec proxies...`, 'info');
+            socket.emit('change-profile', {
+                bio: bio,
+                limit: limit,
+                delayBetween: delay
+            });
+        }
+
+        function changeUsername() {
+            const username = document.getElementById('newUsername').value.trim();
+            const limit = parseInt(document.getElementById('accountLimit').value) || 0;
+            const delay = parseInt(document.getElementById('usernameDelay').value) || 3000;
+            
+            if (!username) {
+                addLog('Veuillez entrer un pseudo', 'warning');
+                return;
+            }
+            
+            addLog(`📝 Changement de username avec proxies...`, 'info');
+            socket.emit('change-username', {
+                username: username,
+                limit: limit,
+                delayBetween: delay
+            });
+        }
+
+        function changeDisplayName() {
+            const displayName = document.getElementById('displayName').value.trim();
+            const guildId = document.getElementById('displayGuildId').value.trim();
+            const limit = parseInt(document.getElementById('accountLimit').value) || 0;
+            const delay = parseInt(document.getElementById('displayDelay').value) || 2000;
+            
+            if (!displayName) {
+                addLog('Veuillez entrer un nom d\'affichage', 'warning');
+                return;
+            }
+            
+            addLog(`📛 Changement de nom d'affichage avec proxies...`, 'info');
+            socket.emit('change-displayname', {
+                displayName: displayName,
+                guildId: guildId || null,
+                limit: limit,
+                delayBetween: delay
+            });
+        }
+
+        function changeAvatar() {
+            if (!selectedAvatarFile) {
+                addLog('Veuillez sélectionner une image', 'warning');
+                return;
+            }
+
+            const limit = parseInt(document.getElementById('accountLimit').value) || 0;
+            const delay = parseInt(document.getElementById('avatarDelay').value) || 3000;
+            
+            addLog(`🖼️ Changement d'avatar avec proxies...`, 'info');
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64Image = e.target.result;
+                socket.emit('change-avatar', {
+                    imageData: base64Image,
+                    limit: limit,
+                    delayBetween: delay
+                });
+            };
+            reader.readAsDataURL(selectedAvatarFile);
+        }
+    </script>
+</body>
+</html>

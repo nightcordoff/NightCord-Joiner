@@ -1,0 +1,19 @@
+{
+  "name": "vocal-joiner-pro-undetect",
+  "version": "2.0.0",
+  "description": "Vocal Joiner PRO avec Proxies et 2Captcha",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": ["discord", "vocal", "joiner", "proxy", "captcha"],
+  "author": "ahki & hexec",
+  "license": "MIT",
+  "dependencies": {
+    "discord.js-selfbot-v13": "^3.4.3",
+    "express": "^4.18.2",
+    "socket.io": "^4.6.1",
+    "axios": "^1.6.7",
+    "https-proxy-agent": "^7.0.2"
+  }
+}
